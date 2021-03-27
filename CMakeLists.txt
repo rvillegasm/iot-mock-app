@@ -18,3 +18,4 @@ set(SOURCES
 add_executable(iot_mock ${SOURCES})
 
 add_subdirectory(test)
+
