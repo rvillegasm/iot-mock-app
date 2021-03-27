@@ -7,7 +7,7 @@ env:
   BUILD_TYPE: Release
 
 jobs:
-  build:
+  build-and-test:
     # The CMake configure and build commands are platform agnostic and should work equally
     # well on Windows or Mac.  You can convert this to a matrix build if you need
     # cross-platform coverage.
@@ -49,3 +49,38 @@ jobs:
       shell: bash
       # Execute tests defined inside the catch2 test executable.
       run: ./bin/tests
+
+    - name: Upload artifact to temp storage
+      uses: actions/upload-artifact@v2
+      with: 
+        name: iot_mock
+        path: ${{github.workspace}}/build/bin
+
+  release:
+    name: Release new artifact to Github Releases
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+    - name: Download artifact from temp storage
+      uses: actions/download-artifact@v2
+      with:
+        name: iot_mock
+    
+    - name: Create Github Release
+      id: create-new-release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: Release v${{ github.run_number }}
+    
+    - name: Upload asset to Github Releases
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create-new-release.outputs.upload_url }}
+        asset: ./iot_mock
+        asset_name: iot_mock_v${{ github.run_number }}
+        asset_content_type: application/octet-stream
